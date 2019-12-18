@@ -70,3 +70,22 @@ abstract class GenerateEntityClassAbstract extends GenerateClass {
     generateClass.writeln('import \'$fileImport\';');
   }
 }
+
+abstract class GenerateFlutterWidgetAbstract
+    extends GenerateEntityClassAbstract {
+  GenerateFlutterWidgetAbstract(String name,
+      {String classSuffix, String parentClass})
+      : super(name, classSuffix: classSuffix, parentClass: parentClass);
+  void generateWidget();
+
+  @override
+  void addImports() {
+    generateClass.writeln('import \'package:flutter/material.dart\';');
+  }
+
+  @override
+  String build() {
+    generateWidget();
+    return super.build();
+  }
+}
