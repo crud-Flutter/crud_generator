@@ -4,18 +4,19 @@ abstract class GenerateClass {
   String classSuffix;
   String parentClass;
   String fieldPrefix;
-  Map<String, String> fields = new Map();
-  StringBuffer generateClass = new StringBuffer();
+  Map<String, String> fields = {};
+  StringBuffer generateClass = StringBuffer();
   GenerateClass(this.classPrefix, {this.classSuffix, this.parentClass}) {
-    this.name = this.classPrefix;
-    if (this.classSuffix != null) {
-      this.name += this.classSuffix;
+    name = classPrefix;
+    if (classSuffix != null) {
+      name += classSuffix;
     }
     addImports();
     _setClass();
   }
 
-  GenerateClass addField(String type, String name, {bool persistField: false}) {
+  GenerateClass addField(String type, String name,
+      {bool persistField = false}) {
     if (persistField) {
       fields[name] = type;
     }
@@ -23,20 +24,20 @@ abstract class GenerateClass {
     return this;
   }
 
-  generateFieldDeclaration(type, name, {bool persistField: false}) {
+  void generateFieldDeclaration(type, name, {bool persistField = false}) {
     generateClass.writeln('$type $name;');
   }
 
-  _setClass() {
-    String declaredClass = 'class $name';
-    if (this.parentClass != null) {
+  void _setClass() {
+    var declaredClass = 'class $name';
+    if (parentClass != null) {
       declaredClass += ' extends $parentClass';
     }
     declaredClass += ' {';
     generateClass.writeln(declaredClass);
   }
 
-  constructorEmpty() {
+  void constructorEmpty() {
     generateClass.writeln('$name();');
   }
 
@@ -45,7 +46,7 @@ abstract class GenerateClass {
     return generateClass.toString();
   }
 
-  addImports();
+  void addImports();
 }
 
 abstract class GenerateEntityClassAbstract extends GenerateClass {
@@ -55,17 +56,17 @@ abstract class GenerateEntityClassAbstract extends GenerateClass {
   GenerateEntityClassAbstract(String name,
       {String classSuffix, String parentClass})
       : super(name, classSuffix: classSuffix, parentClass: parentClass) {
-    this.entityInstance = name.toLowerCase() + 'Entity';
-    this.entityClass = this.classPrefix + 'Entity';
-    this.entityClassInstance = '$entityClass $entityInstance';
+    entityInstance = name.toLowerCase() + 'Entity';
+    entityClass = classPrefix + 'Entity';
+    entityClassInstance = '$entityClass $entityInstance';
   }
 
-  importEntity() {
+  void importEntity() {
     importGenerate('entity');
   }
 
-  importGenerate(String suffix) {
-    String fileImport = this.classPrefix.toLowerCase() + '.$suffix.dart';
+  void importGenerate(String suffix) {
+    var fileImport = classPrefix.toLowerCase() + '.$suffix.dart';
     generateClass.writeln('import \'$fileImport\';');
   }
 }
