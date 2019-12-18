@@ -1,5 +1,6 @@
 abstract class GenerateClass {
   String name;
+  String nameLowerCase;
   String classPrefix;
   String classSuffix;
   String parentClass;
@@ -8,6 +9,7 @@ abstract class GenerateClass {
   StringBuffer generateClass = StringBuffer();
   GenerateClass(this.classPrefix, {this.classSuffix, this.parentClass}) {
     name = classPrefix;
+    nameLowerCase = name.toLowerCase();
     if (classSuffix != null) {
       name += classSuffix;
     }
@@ -56,7 +58,7 @@ abstract class GenerateEntityClassAbstract extends GenerateClass {
   GenerateEntityClassAbstract(String name,
       {String classSuffix, String parentClass})
       : super(name, classSuffix: classSuffix, parentClass: parentClass) {
-    entityInstance = name.toLowerCase() + 'Entity';
+    entityInstance = '$nameLowerCase' 'Entity';
     entityClass = classPrefix + 'Entity';
     entityClassInstance = '$entityClass $entityInstance';
   }
@@ -66,8 +68,7 @@ abstract class GenerateEntityClassAbstract extends GenerateClass {
   }
 
   void importGenerate(String suffix) {
-    var fileImport = classPrefix.toLowerCase() + '.$suffix.dart';
-    generateClass.writeln('import \'$fileImport\';');
+    generateClass.writeln('import \'$nameLowerCase.$suffix.dart\';');
   }
 }
 
