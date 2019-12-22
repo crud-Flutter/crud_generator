@@ -7,6 +7,15 @@ import 'package:source_gen/source_gen.dart';
 
 abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
   final ClassBuilder _classBuilder = ClassBuilder();
+  Element _element;
+
+  set element(Element element) {
+    _element = element;
+    
+  }
+
+  Element get element => _element;
+  ClassElement get elementAsClass => _element as ClassElement;
 
   set name(String name) => _classBuilder.name = name;
 
@@ -84,7 +93,6 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
 
 abstract class GenerateEntityClassForAnnotation<T>
     extends GenerateClassForAnnotation<T> {
-  Element element;
   String get entityClass => '${element.name}Entity';
   String get entityInstance => '${element.name.toLowerCase()}Entity';
   String get entityClassInstance => '$entityClass $entityInstance';
