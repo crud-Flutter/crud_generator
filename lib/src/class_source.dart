@@ -11,7 +11,6 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
 
   set element(Element element) {
     _element = element;
-    
   }
 
   Element get element => _element;
@@ -64,6 +63,7 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
       List<Parameter> optionalParameters,
       List<Parameter> requiredParameters,
       MethodModifier modifier,
+      MethodType type,
       Code body,
       bool lambda}) {
     var methodBuilder = MethodBuilder();
@@ -79,6 +79,9 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
     }
     if (modifier != null) {
       methodBuilder.modifier = modifier;
+    }
+    if (type != null) {
+      methodBuilder.type = type;
     }
     methodBuilder.body = body;
     methodBuilder.lambda = lambda;
