@@ -12,6 +12,8 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
 
   String get name => _classBuilder.name;
 
+  set extend(Reference extend) => _classBuilder.extend = extend;
+
   void declareField(Reference type, String name, {Code assignment}) {
     var fieldBuilder = FieldBuilder();
     fieldBuilder.name = name;
