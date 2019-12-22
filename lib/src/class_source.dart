@@ -1,92 +1,115 @@
-abstract class GenerateClass {
-  String name;
-  String nameLowerCase;
-  String classPrefix;
-  String classSuffix;
-  String parentClass;
-  String fieldPrefix;
-  Map<String, String> fields = {};
-  StringBuffer generateClass = StringBuffer();
-  GenerateClass(this.classPrefix, {this.classSuffix, this.parentClass}) {
-    name = classPrefix;
-    nameLowerCase = name.toLowerCase();
-    if (classSuffix != null) {
-      name += classSuffix;
+// import 'package:crud_generator/crud_generator.dart';
+import 'package:analyzer/dart/element/element.dart';
+import 'package:dart_style/dart_style.dart';
+
+import 'package:code_builder/code_builder.dart';
+import 'package:source_gen/source_gen.dart';
+
+abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
+  final ClassBuilder _classBuilder = ClassBuilder();
+
+  set name(String name) => _classBuilder.name = name;
+
+  String get name => _classBuilder.name;
+
+  void declareField(Reference type, String name, {Code assignment}) {
+    var fieldBuilder = FieldBuilder();
+    fieldBuilder.name = name;
+    fieldBuilder.type = type;
+    if (assignment != null) {
+      fieldBuilder.assignment = assignment;
     }
-    addImports();
-    _setClass();
+    _classBuilder.fields.add(fieldBuilder.build());
   }
 
-  GenerateClass addField(String type, String name,
-      {bool persistField = false}) {
-    if (persistField) {
-      fields[name] = type;
+  void declareConstructorNamed(String name, Code body,
+      {List<Parameter> optionalParameters,
+      List<Parameter> requiredParameters}) {
+    var constructorBuilder = ConstructorBuilder();
+    constructorBuilder.name = name;
+    constructorBuilder.body = body;
+    if (optionalParameters != null && optionalParameters.isNotEmpty) {
+      constructorBuilder.optionalParameters.addAll(optionalParameters);
     }
-    generateFieldDeclaration(type, name, persistField: persistField);
-    return this;
-  }
-
-  void generateFieldDeclaration(type, name, {bool persistField = false}) {
-    generateClass.writeln('$type $name;');
-  }
-
-  void _setClass() {
-    var declaredClass = 'class $name';
-    if (parentClass != null) {
-      declaredClass += ' extends $parentClass';
+    if (requiredParameters != null && requiredParameters.isNotEmpty) {
+      constructorBuilder.requiredParameters.addAll(requiredParameters);
     }
-    declaredClass += ' {';
-    generateClass.writeln(declaredClass);
+    _classBuilder.constructors.add(constructorBuilder.build());
   }
 
-  void constructorEmpty() {
-    generateClass.writeln('$name();');
+  void declareConstructor({String name, Code body}) {
+    var constructorBuilder = ConstructorBuilder();
+    if (name != null) {
+      constructorBuilder.name = name;
+    }
+    if (body != null) {
+      constructorBuilder.body = body;
+    }
+    _classBuilder.constructors.add(constructorBuilder.build());
+  }
+
+  void declareMethod(String name,
+      {Reference returns,
+      List<Parameter> optionalParameters,
+      List<Parameter> requiredParameters,
+      MethodModifier modifier,
+      Code body,
+      bool lambda}) {
+    var methodBuilder = MethodBuilder();
+    methodBuilder.name = name;
+    if (returns != null) {
+      methodBuilder.returns = returns;
+    }
+    if (optionalParameters != null && optionalParameters.isNotEmpty) {
+      methodBuilder.optionalParameters.addAll(optionalParameters);
+    }
+    if (requiredParameters != null && requiredParameters.isNotEmpty) {
+      methodBuilder.requiredParameters.addAll(requiredParameters);
+    }
+    if (modifier != null) {
+      methodBuilder.modifier = modifier;
+    }
+    methodBuilder.body = body;
+    methodBuilder.lambda = lambda;
+    _classBuilder.methods.add(methodBuilder.build());
   }
 
   String build() {
-    generateClass.write('}');
-    return generateClass.toString();
-  }
-
-  void addImports();
-}
-
-abstract class GenerateEntityClassAbstract extends GenerateClass {
-  String entityInstance;
-  String entityClassInstance;
-  String entityClass;
-  GenerateEntityClassAbstract(String name,
-      {String classSuffix, String parentClass})
-      : super(name, classSuffix: classSuffix, parentClass: parentClass) {
-    entityInstance = '$nameLowerCase' 'Entity';
-    entityClass = classPrefix + 'Entity';
-    entityClassInstance = '$entityClass $entityInstance';
-  }
-
-  void importEntity() {
-    importGenerate('entity');
-  }
-
-  void importGenerate(String suffix) {
-    generateClass.writeln('import \'$nameLowerCase.$suffix.dart\';');
+    final emitter = DartEmitter();
+    return DartFormatter().format('${_classBuilder.build().accept(emitter)}');
   }
 }
 
-abstract class GenerateFlutterWidgetAbstract
-    extends GenerateEntityClassAbstract {
-  GenerateFlutterWidgetAbstract(String name,
-      {String classSuffix, String parentClass})
-      : super(name, classSuffix: classSuffix, parentClass: parentClass);
-  void generateWidget();
-
-  @override
-  void addImports() {
-    generateClass.writeln('import \'package:flutter/material.dart\';');
-  }
+abstract class GenerateEntityClassForAnnotation<T>
+    extends GenerateClassForAnnotation<T> {
+  Element element;
+  String get entityClass => '${element.name}Entity';
+  String get entityInstance => '${element.name.toLowerCase()}Entity';
+  String get entityClassInstance => '$entityClass $entityInstance';
 
   @override
   String build() {
-    generateWidget();
-    return super.build();
+    return "import 'package:cloud_firestore/cloud_firestore.dart';\n"
+            "import '${element.name.toLowerCase()}.entity.dart';" +
+        super.build();
   }
 }
+
+// // abstract class GenerateFlutterWidgetAbstract
+// //     extends GenerateEntityClassAbstract {
+// //   GenerateFlutterWidgetAbstract(String name,
+// //       {String classSuffix, String parentClass})
+// //       : super(name, classSuffix: classSuffix, parentClass: parentClass);
+// //   void generateWidget();
+
+// //   @override
+// //   void addImports() {
+// //     generateClass.writeln('import \'package:flutter/material.dart\';');
+// //   }
+
+// //   @override
+// //   String build() {
+// //     generateWidget();
+// //     return super.build();
+// //   }
+// // }
