@@ -1,5 +1,6 @@
 // import 'package:crud_generator/crud_generator.dart';
 import 'package:analyzer/dart/element/element.dart';
+import 'package:crud_generator/crud_generator.dart';
 import 'package:dart_style/dart_style.dart';
 
 import 'package:code_builder/code_builder.dart';
@@ -8,10 +9,11 @@ import 'package:source_gen/source_gen.dart';
 abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
   final ClassBuilder _classBuilder = ClassBuilder();
   Element _element;
+  ConstantReader annotation;
 
-  set element(Element element) {
-    _element = element;
-  }
+  set element(Element element) => _element = element;
+
+  ConstantReader getAnnotationValue(String field) => annotation.read(field);
 
   Element get element => _element;
   ClassElement get elementAsClass => _element as ClassElement;
@@ -102,27 +104,53 @@ abstract class GenerateEntityClassForAnnotation<T>
 
   @override
   String build() {
-    return "import 'package:cloud_firestore/cloud_firestore.dart';\n"
-            "import '${element.name.toLowerCase()}.entity.dart';" +
+    return "import '${element.name.toLowerCase()}.entity.dart';" +
         super.build();
   }
 }
 
-// // abstract class GenerateFlutterWidgetAbstract
-// //     extends GenerateEntityClassAbstract {
-// //   GenerateFlutterWidgetAbstract(String name,
-// //       {String classSuffix, String parentClass})
-// //       : super(name, classSuffix: classSuffix, parentClass: parentClass);
-// //   void generateWidget();
+abstract class GenerateFlutterWidgetForAnnotation<T>
+    extends GenerateEntityClassForAnnotation<T> {
+  void methodBuild(Code body) {
+    declareMethod('build',
+        returns: refer('Widget'),
+        requiredParameters: [
+          Parameter((b) => b
+            ..name = 'context'
+            ..type = refer('BuildContext'))
+        ],
+        body: body);
+  }
 
-// //   @override
-// //   void addImports() {
-// //     generateClass.writeln('import \'package:flutter/material.dart\';');
-// //   }
+  Code instanceScaffold(String title, {Code fab, Code body}) {
+    var scaffoldCode = [
+      Code('return Scaffold('),
+      Code('appBar: AppBar('),
+      Code("title: Text('$title'),"),
+      Code('),')
+    ];
+    if (fab != null) {
+      scaffoldCode.add(fab);
+    }
+    if (body != null) {
+      scaffoldCode.add(body);
+    }
+    scaffoldCode.add(Code(');'));
+    return Block((b) => b..statements.addAll(scaffoldCode));
+  }
 
-// //   @override
-// //   String build() {
-// //     generateWidget();
-// //     return super.build();
-// //   }
-// // }
+  Code instanceFab(Code child, Code onPressed) {
+    var fabCode = [
+      Code('floatingActionButton: FloatingActionButton('),
+      Code('child: $child,'),
+      Code('onPressed: $onPressed,'),
+      Code('),')
+    ];
+    return Block((b) => b..statements.addAll(fabCode));
+  }
+
+  @override
+  String build() {
+    return "import 'package:flutter/material.dart';" + super.build();
+  }
+}
