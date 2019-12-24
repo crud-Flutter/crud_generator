@@ -122,13 +122,16 @@ abstract class GenerateFlutterWidgetForAnnotation<T>
         body: body);
   }
 
-  Code instanceScaffold(String title, {Code fab, Code body}) {
+  Code instanceScaffold(String title, {Code actionBar, Code fab, Code body}) {
     var scaffoldCode = [
       Code('return Scaffold('),
       Code('appBar: AppBar('),
-      Code("title: Text('$title'),"),
-      Code('),')
+      Code("title: Text('$title'),")
     ];
+    if (actionBar != null) {
+      scaffoldCode.add(actionBar);
+    }
+    scaffoldCode.add(Code('),'));
     if (fab != null) {
       scaffoldCode.add(fab);
     }
