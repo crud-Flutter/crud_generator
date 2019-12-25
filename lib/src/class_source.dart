@@ -1,6 +1,4 @@
-// import 'package:crud_generator/crud_generator.dart';
 import 'package:analyzer/dart/element/element.dart';
-import 'package:crud_generator/crud_generator.dart';
 import 'package:dart_style/dart_style.dart';
 
 import 'package:code_builder/code_builder.dart';
@@ -101,12 +99,6 @@ abstract class GenerateEntityClassForAnnotation<T>
   String get entityClass => '${element.name}Entity';
   String get entityInstance => '${element.name.toLowerCase()}Entity';
   String get entityClassInstance => '$entityClass $entityInstance';
-
-  @override
-  String build() {
-    return "import '${element.name.toLowerCase()}.entity.dart';" +
-        super.build();
-  }
 }
 
 abstract class GenerateFlutterWidgetForAnnotation<T>
