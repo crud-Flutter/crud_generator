@@ -22,12 +22,16 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
 
   set extend(Reference extend) => _classBuilder.extend = extend;
 
-  void declareField(Reference type, String name, {Code assignment}) {
+  void declareField(Reference type, String name,
+      {Code assignment, FieldModifier modifier}) {
     var fieldBuilder = FieldBuilder();
     fieldBuilder.name = name;
     fieldBuilder.type = type;
     if (assignment != null) {
       fieldBuilder.assignment = assignment;
+    }
+    if (modifier!=null) {
+      fieldBuilder.modifier = modifier;
     }
     _classBuilder.fields.add(fieldBuilder.build());
   }
@@ -47,7 +51,12 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
     _classBuilder.constructors.add(constructorBuilder.build());
   }
 
-  void declareConstructor({String name, Code body}) {
+  void declareConstructor(
+      {String name,
+      Code body,
+      List<Parameter> optionalParameters,
+      List<Parameter> requiredParameters,
+      bool lambda}) {
     var constructorBuilder = ConstructorBuilder();
     if (name != null) {
       constructorBuilder.name = name;
@@ -55,6 +64,13 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
     if (body != null) {
       constructorBuilder.body = body;
     }
+    if (optionalParameters != null && optionalParameters.isNotEmpty) {
+      constructorBuilder.optionalParameters.addAll(optionalParameters);
+    }
+    if (requiredParameters != null && requiredParameters.isNotEmpty) {
+      constructorBuilder.requiredParameters.addAll(requiredParameters);
+    }
+    constructorBuilder.lambda = lambda;
     _classBuilder.constructors.add(constructorBuilder.build());
   }
 
