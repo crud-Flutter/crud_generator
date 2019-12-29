@@ -10,6 +10,8 @@ dependencies:
   source_gen: ^0.9.4+6
   analyzer: ^0.39.2+1
   code_builder: ^3.2.1
+  flutter_persistence_api:
+    path: ../flutter_persistence_api
 #  path: ^1.6.0
 
 dev_dependencies:
