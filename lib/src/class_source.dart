@@ -140,7 +140,8 @@ abstract class GenerateFlutterWidgetForAnnotation<T>
         body: body);
   }
 
-  Code instanceScaffold(String title, {Code actionBar, Code fab, Code body}) {
+  Code instanceScaffold(String title,
+      {Code actionBar, Code fab, Code body, bool drawer = false}) {
     var scaffoldCode = [
       Code('return Scaffold('),
       Code('appBar: AppBar('),
@@ -155,6 +156,9 @@ abstract class GenerateFlutterWidgetForAnnotation<T>
     }
     if (body != null) {
       scaffoldCode.add(body);
+    }
+    if (drawer) {
+      scaffoldCode.add(Code('drawer: Drawer(child: drawer(context)),'));
     }
     scaffoldCode.add(Code(');'));
     return Block((b) => b..statements.addAll(scaffoldCode));
