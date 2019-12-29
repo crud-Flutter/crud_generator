@@ -1,5 +1,7 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:dart_style/dart_style.dart';
+import 'package:flutter_persistence_api/flutter_persistence_api.dart'
+    as api;
 
 import 'package:code_builder/code_builder.dart';
 import 'package:source_gen/source_gen.dart';
@@ -30,7 +32,7 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
     if (assignment != null) {
       fieldBuilder.assignment = assignment;
     }
-    if (modifier!=null) {
+    if (modifier != null) {
       fieldBuilder.modifier = modifier;
     }
     _classBuilder.fields.add(fieldBuilder.build());
@@ -108,6 +110,11 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
     final emitter = DartEmitter();
     return DartFormatter().format('${_classBuilder.build().accept(emitter)}');
   }
+
+  bool isFieldPersist(Element element) =>
+      TypeChecker.fromRuntime(api.Field).hasAnnotationOfExact(element) ||
+      TypeChecker.fromRuntime(api.Date).hasAnnotationOfExact(element) ||
+      TypeChecker.fromRuntime(api.Time).hasAnnotationOfExact(element);
 }
 
 abstract class GenerateEntityClassForAnnotation<T>
