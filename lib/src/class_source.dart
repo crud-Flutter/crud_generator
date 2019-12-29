@@ -9,6 +9,7 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
   ClassBuilder _classBuilder = ClassBuilder();
   Element _element;
   ConstantReader annotation;
+  Set<String> imports;
 
   set element(Element element) => _element = element;
 
@@ -25,6 +26,7 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
 
   void init() {
     _classBuilder = ClassBuilder();
+    imports = {};
   }
 
   void declareField(Reference type, String name,
@@ -111,13 +113,20 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
 
   String build() {
     final emitter = DartEmitter();
-    return DartFormatter().format('${_classBuilder.build().accept(emitter)}');
+    return imports.fold(
+            '', (prev, element) => prev.toString() + "import '$element';") +
+        DartFormatter().format('${_classBuilder.build().accept(emitter)}');
   }
 
   bool isFieldPersist(Element element) =>
       TypeChecker.fromRuntime(api.Field).hasAnnotationOfExact(element) ||
       TypeChecker.fromRuntime(api.Date).hasAnnotationOfExact(element) ||
       TypeChecker.fromRuntime(api.Time).hasAnnotationOfExact(element);
+
+  bool isManyToOneField(Element element) =>
+      TypeChecker.fromRuntime(api.ManyToOne).hasAnnotationOfExact(element);
+
+  void addImportPackage(String package) => imports.add(package);
 }
 
 abstract class GenerateEntityClassForAnnotation<T>
@@ -130,6 +139,7 @@ abstract class GenerateEntityClassForAnnotation<T>
 abstract class GenerateFlutterWidgetForAnnotation<T>
     extends GenerateEntityClassForAnnotation<T> {
   void methodBuild(Code body) {
+    addImportPackage('package:flutter/material.dart');
     declareMethod('build',
         returns: refer('Widget'),
         requiredParameters: [
@@ -172,10 +182,5 @@ abstract class GenerateFlutterWidgetForAnnotation<T>
       Code('),')
     ];
     return Block((b) => b..statements.addAll(fabCode));
-  }
-
-  @override
-  String build() {
-    return "import 'package:flutter/material.dart';" + super.build();
   }
 }
