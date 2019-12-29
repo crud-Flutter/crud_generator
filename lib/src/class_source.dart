@@ -1,13 +1,12 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:dart_style/dart_style.dart';
-import 'package:flutter_persistence_api/flutter_persistence_api.dart'
-    as api;
+import 'package:flutter_persistence_api/flutter_persistence_api.dart' as api;
 
 import 'package:code_builder/code_builder.dart';
 import 'package:source_gen/source_gen.dart';
 
 abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
-  final ClassBuilder _classBuilder = ClassBuilder();
+  ClassBuilder _classBuilder = ClassBuilder();
   Element _element;
   ConstantReader annotation;
 
@@ -23,6 +22,10 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
   String get name => _classBuilder.name;
 
   set extend(Reference extend) => _classBuilder.extend = extend;
+
+  void init() {
+    _classBuilder = ClassBuilder();
+  }
 
   void declareField(Reference type, String name,
       {Code assignment, FieldModifier modifier}) {
