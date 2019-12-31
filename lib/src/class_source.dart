@@ -121,10 +121,17 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
   bool isFieldPersist(Element element) =>
       TypeChecker.fromRuntime(api.Field).hasAnnotationOfExact(element) ||
       TypeChecker.fromRuntime(api.Date).hasAnnotationOfExact(element) ||
-      TypeChecker.fromRuntime(api.Time).hasAnnotationOfExact(element);
+      TypeChecker.fromRuntime(api.Time).hasAnnotationOfExact(element) ||
+      isManyToOneField(element);
 
   bool isManyToOneField(Element element) =>
       TypeChecker.fromRuntime(api.ManyToOne).hasAnnotationOfExact(element);
+
+  String getDisplayField(Type type, Element element) =>
+      TypeChecker.fromRuntime(type)
+          .firstAnnotationOfExact(element)
+          .getField('displayField')
+          .toStringValue();
 
   void addImportPackage(String package) => imports.add(package);
 }
