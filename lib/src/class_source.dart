@@ -125,7 +125,11 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
       isManyToOneField(element);
 
   bool isManyToOneField(Element element) =>
-      TypeChecker.fromRuntime(api.ManyToOne).hasAnnotationOfExact(element);
+      hasAnnotation(api.ManyToOne, element);
+  bool isOneToMany(Element element) => hasAnnotation(api.OneToMany, element);
+
+  bool hasAnnotation(Type type, Element element) =>
+      TypeChecker.fromRuntime(type).hasAnnotationOfExact(element);
 
   String getDisplayField(Type type, Element element) =>
       TypeChecker.fromRuntime(type)
