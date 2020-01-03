@@ -1,4 +1,5 @@
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:flutter_persistence_api/flutter_persistence_api.dart' as api;
 
@@ -119,14 +120,16 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
   }
 
   bool isFieldPersist(Element element) =>
-      TypeChecker.fromRuntime(api.Field).hasAnnotationOfExact(element) ||
-      TypeChecker.fromRuntime(api.Date).hasAnnotationOfExact(element) ||
-      TypeChecker.fromRuntime(api.Time).hasAnnotationOfExact(element) ||
-      isManyToOneField(element);
+      hasAnnotation(api.Field, element) ||
+      hasAnnotation(api.Date, element) ||
+      hasAnnotation(api.Time, element) ||
+      isManyToOneField(element) ||
+      isOneToManyField(element);
 
   bool isManyToOneField(Element element) =>
       hasAnnotation(api.ManyToOne, element);
-  bool isOneToMany(Element element) => hasAnnotation(api.OneToMany, element);
+  bool isOneToManyField(Element element) =>
+      hasAnnotation(api.OneToMany, element);
 
   bool hasAnnotation(Type type, Element element) =>
       TypeChecker.fromRuntime(type).hasAnnotationOfExact(element);
@@ -138,6 +141,10 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
           .toStringValue();
 
   void addImportPackage(String package) => imports.add(package);
+
+  Iterable<DartType> getGenericTypes(DartType type) {
+    return type is ParameterizedType ? type.typeArguments : const [];
+  }
 }
 
 abstract class GenerateEntityClassForAnnotation<T>
