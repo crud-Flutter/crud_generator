@@ -1,33 +1,88 @@
 import 'package:analyzer/dart/element/element.dart';
+import 'package:build/src/builder/build_step.dart';
 import 'package:analyzer/dart/element/type.dart';
 import 'package:dart_style/dart_style.dart';
 import 'package:flutter_persistence_api/flutter_persistence_api.dart' as api;
 
 import 'package:code_builder/code_builder.dart';
 import 'package:source_gen/source_gen.dart';
+import 'package:source_gen/src/constants/reader.dart';
 
 abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
-  ClassBuilder _classBuilder = ClassBuilder();
-  Element _element;
-  ConstantReader annotation;
   Set<String> imports;
-
-  set element(Element element) => _element = element;
-
-  ConstantReader getAnnotationValue(String field) => annotation.read(field);
-
-  Element get element => _element;
-  ClassElement get elementAsClass => _element as ClassElement;
-
-  set name(String name) => _classBuilder.name = name;
-
-  String get name => _classBuilder.name;
-
+  Element element;
+  ClassElement get elementAsClass => element as ClassElement;
+  ClassBuilder _classBuilder = ClassBuilder();
   set extend(Reference extend) => _classBuilder.extend = extend;
+  String get entityClass => '${element.name}${manyToManyPosFix}Entity';
+  String get entityInstance =>
+      '${element.name.toLowerCase()}${manyToManyPosFix}Entity';
+  String get entityClassInstance => '$entityClass $entityInstance';
 
-  void init() {
-    _classBuilder = ClassBuilder();
+  ConstantReader annotation;
+
+  bool generateImport;
+  bool manyToMany;
+  String manyToManyGenerate;
+  String get manyToManyPosFix => manyToMany ? 'ManyToMany' : '';
+
+  ConstantReader getAnnotationValue(String field) {
+    try {
+      var result = annotation?.read(field);
+      if (result == null || result.isNull) return null;
+      return result;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  void init(Element element, ConstantReader annotation) {
+    this.element = element;
+    this.annotation = annotation;
     imports = {};
+    generateImport ??= true;
+    manyToMany ??= false;
+    _classBuilder = ClassBuilder()..name = generateName();
+    manyToManyGenerate = '';
+  }
+
+  @override
+  dynamic generateForAnnotatedElement(
+      Element element, ConstantReader annotation, BuildStep buildStep) {
+    init(element, annotation);
+    optionalClassInfo();
+    generateConstructors();
+    generateFields();
+    generateMethods();
+    generateManyToMany();
+    return build();
+  }
+
+  String generateName();
+
+  void optionalClassInfo();
+
+  void generateConstructors();
+
+  void generateFields();
+
+  void generateMethods();
+
+  GenerateClassForAnnotation instance();
+
+  void generateManyToMany() {
+    if (!manyToMany) {
+      elementAsClass.fields.forEach((field) {
+        if (isManyToManyField(field)) {
+          var instanceGenerate = instance();
+          if (instanceGenerate != null) {
+            manyToManyGenerate += instanceGenerate.generateForAnnotatedElement(
+                getGenericTypes(field.type).first.element, null, null);
+            imports.addAll(instanceGenerate.imports);
+          }
+        }
+      });
+    }
   }
 
   void declareField(Reference type, String name,
@@ -112,11 +167,15 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
     _classBuilder.methods.add(methodBuilder.build());
   }
 
+  ClassBuilder get classBuilder => _classBuilder;
+
   String build() {
     final emitter = DartEmitter();
-    return imports.fold(
-            '', (prev, element) => prev.toString() + "import '$element';") +
-        DartFormatter().format('${_classBuilder.build().accept(emitter)}');
+    return (generateImport
+            ? imports.fold('', (prev, element) => prev.toString() + element)
+            : '') +
+        DartFormatter().format('${_classBuilder.build().accept(emitter)}') +
+        manyToManyGenerate;
   }
 
   bool isFieldPersist(Element element) =>
@@ -130,6 +189,8 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
       hasAnnotation(api.ManyToOne, element);
   bool isOneToManyField(Element element) =>
       hasAnnotation(api.OneToMany, element);
+  bool isManyToManyField(Element element) =>
+      hasAnnotation(api.ManyToMany, element);
 
   bool hasAnnotation(Type type, Element element) =>
       TypeChecker.fromRuntime(type).hasAnnotationOfExact(element);
@@ -140,7 +201,8 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
           .getField('displayField')
           .toStringValue();
 
-  void addImportPackage(String package) => imports.add(package);
+  void addImportPackage(String package, {String rename}) => imports
+      .add("import '$package'" + (rename == null ? '' : ' as $rename') + ';');
 
   Iterable<DartType> getGenericTypes(DartType type) {
     return type is ParameterizedType ? type.typeArguments : const [];
@@ -149,56 +211,52 @@ abstract class GenerateClassForAnnotation<T> extends GeneratorForAnnotation<T> {
 
 abstract class GenerateEntityClassForAnnotation<T>
     extends GenerateClassForAnnotation<T> {
-  String get entityClass => '${element.name}Entity';
-  String get entityInstance => '${element.name.toLowerCase()}Entity';
-  String get entityClassInstance => '$entityClass $entityInstance';
+  void methodDispose() {
+    declareMethod('dispose', body: Code('_bloc.dispose()'), lambda: true);
+  }
 }
 
 abstract class GenerateFlutterWidgetForAnnotation<T>
     extends GenerateEntityClassForAnnotation<T> {
   void methodBuild(Code body) {
-    addImportPackage('package:flutter/material.dart');
+    addImportPackage('package:flutter/material.dart', rename: 'flutter');
     declareMethod('build',
-        returns: refer('Widget'),
+        returns: refer('flutter.Widget'),
         requiredParameters: [
           Parameter((b) => b
             ..name = 'context'
-            ..type = refer('BuildContext'))
+            ..type = refer('flutter.BuildContext'))
         ],
         body: body);
   }
 
-  Code instanceScaffold(String title,
+  String instanceScaffold(String title,
       {Code actionBar, Code fab, Code body, bool drawer = false}) {
-    var scaffoldCode = [
-      Code('return Scaffold('),
-      Code('appBar: AppBar('),
-      Code("title: Text('$title'),")
-    ];
+    var scaffoldCode = StringBuffer(
+      '''return flutter.Scaffold(
+      appBar: flutter.AppBar(
+      title: flutter.Text('$title'),''');
     if (actionBar != null) {
-      scaffoldCode.add(actionBar);
+      scaffoldCode.writeln(actionBar);
     }
-    scaffoldCode.add(Code('),'));
+    scaffoldCode.writeln(Code('),'));
     if (fab != null) {
-      scaffoldCode.add(fab);
+      scaffoldCode.writeln(fab);
     }
     if (body != null) {
-      scaffoldCode.add(body);
+      scaffoldCode.writeln(body);
     }
     if (drawer) {
-      scaffoldCode.add(Code('drawer: Drawer(child: drawer(context)),'));
+      scaffoldCode.writeln('drawer: flutter.Drawer(child: drawer(context)),');
     }
-    scaffoldCode.add(Code(');'));
-    return Block((b) => b..statements.addAll(scaffoldCode));
+    scaffoldCode.writeln(');');
+    return scaffoldCode.toString();
   }
 
   Code instanceFab(Code child, Code onPressed) {
-    var fabCode = [
-      Code('floatingActionButton: FloatingActionButton('),
-      Code('child: $child,'),
-      Code('onPressed: $onPressed,'),
-      Code('),')
-    ];
-    return Block((b) => b..statements.addAll(fabCode));
+    return Code('''floatingActionButton: flutter.FloatingActionButton(
+      child: $child,
+      onPressed: $onPressed,
+      ),''');    
   }
 }
